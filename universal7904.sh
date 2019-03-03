@@ -24,9 +24,9 @@ export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head 
 export ARCH=arm64
 export KBUILD_BUILD_HOST=loveade
 export KBUILD_BUILD_USER="eun0115"
-export ANDROID_SIMPLE_LMK_MINFREE=96
-export ANDROID_SIMPLE_LMK_TIMEOUT_MSEC=100
-export LOCALVERSION="-liquid-EOL-m20lte"
+#export ANDROID_SIMPLE_LMK_MINFREE=96
+#export ANDROID_SIMPLE_LMK_TIMEOUT_MSEC=100
+export LOCALVERSION="-liquid-EOL-OC-RCU-LMKD-m20lte"
 export USB_ANDROID_SAMSUNG_MTP=y
 # sticker plox
 function sticker() {
