@@ -105,7 +105,7 @@ struct bts_scenario {
 	struct bts_info *head;
 };
 
-static struct pm_qos_request exynos_mif_bts_qos;
+//static struct pm_qos_request exynos_mif_bts_qos;
 static struct pm_qos_request exynos_int_bts_qos;
 static DEFINE_MUTEX(media_mutex);
 
@@ -1189,7 +1189,7 @@ void bts_update_bw(enum bts_bw_type type, unsigned int bw)
 	mif_freq = total_bw * 100 / BUS_WIDTH / exynos_mif_util;
 	int_freq = (bw_w < bw_r ? bw_r : bw_w) * 100 / BUS_WIDTH / exynos_int_util;
 
-	pm_qos_update_request(&exynos_mif_bts_qos, mif_freq);
+	//pm_qos_update_request(&exynos_mif_bts_qos, mif_freq);
 	pm_qos_update_request(&exynos_int_bts_qos, int_freq);
 
 	BTS_DBG("[BTS] BW(KB/s): bw%i %u total %u, read %u, write %u, "
@@ -1254,7 +1254,7 @@ static int __init exynos_bts_init(void)
 
 	bts_initialize_domains();
 
-	pm_qos_add_request(&exynos_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, 0);
+	//pm_qos_add_request(&exynos_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, 0);
 	pm_qos_add_request(&exynos_int_bts_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
 
 	register_pm_notifier(&exynos_bts_notifier);
