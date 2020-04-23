@@ -728,14 +728,14 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
 	smp_cross_call(mask, IPI_CALL_FUNC);
 }
 
-void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
-{
-	smp_cross_call(mask, IPI_WAKEUP);
-}
-
 void arch_send_call_function_single_ipi(int cpu)
 {
 	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+}
+
+void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
+{
+	smp_cross_call(mask, IPI_WAKEUP);
 }
 
 #ifdef CONFIG_IRQ_WORK
@@ -827,7 +827,6 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 #endif
 
 	case IPI_WAKEUP:
-		pr_debug("%s: IPI_WAKEUP\n", __func__);
 		break;
 
 	case IPI_SGI_15_IRQ:
