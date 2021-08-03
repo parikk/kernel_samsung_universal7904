@@ -1,7 +1,6 @@
 config ZRAM
 	tristate "Compressed RAM block device support"
 	depends on BLOCK && SYSFS && ZSMALLOC && CRYPTO
-	select CRYPTO_LZO
 	select CRYPTO_LZ4
 	default n
 	help
@@ -54,4 +53,4 @@ config ZRAM_LRU_WRITEBACK_LIMIT
 
 config ZRAM_DEFAULT_COMP_ALGORITHM
 	string "Default ZRAM algorithm"
-	default "lzo"
+	default "lz4"
