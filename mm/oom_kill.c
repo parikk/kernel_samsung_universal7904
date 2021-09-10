@@ -40,9 +40,8 @@
 #include <trace/events/oom.h>
 
 int sysctl_panic_on_oom;
-int sysctl_oom_kill_allocating_task = 1;
-int sysctl_oom_dump_tasks;
-int sysctl_reap_mem_on_sigkill = 1;
+int sysctl_oom_kill_allocating_task;
+int sysctl_oom_dump_tasks = 1;
 
 DEFINE_MUTEX(oom_lock);
 
@@ -450,6 +449,8 @@ bool oom_killer_disabled __read_mostly;
  */
 void mark_oom_victim(struct task_struct *tsk)
 {
+	struct mm_struct *mm = tsk->mm;
+
 	WARN_ON(oom_killer_disabled);
 	/* OOM killer might race with memcg OOM */
 	if (test_and_set_tsk_thread_flag(tsk, TIF_MEMDIE))
