@@ -142,10 +142,6 @@ unsigned long long sysctl_tcp_cltcp_ifdevs __read_mostly;
 #define TCP_REMNANT (TCP_FLAG_FIN|TCP_FLAG_URG|TCP_FLAG_SYN|TCP_FLAG_PSH)
 #define TCP_HP_BITS (~(TCP_RESERVED_BITS|TCP_FLAG_PSH))
 
-#define REXMIT_NONE	0 /* no loss recovery to do */
-#define REXMIT_LOST	1 /* retransmit packets marked lost */
-#define REXMIT_NEW	2 /* FRTO-style transmit of unsent/new packets */
-
 #ifdef CONFIG_CLTCP
 static int cltcp_int_ln (u32);
 static int cltcp_pow (int, int);
@@ -3086,8 +3082,7 @@ static void tcp_enter_recovery(struct sock *sk, bool ece_ack)
 /* Process an ACK in CA_Loss state. Move to CA_Open if lost data are
  * recovered or spurious. Otherwise retransmits more on partial ACKs.
  */
-static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack,
-			     int *rexmit)
+static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 	bool recovered = !before(tp->snd_una, tp->high_seq);
@@ -3109,15 +3104,10 @@ static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack,
 				tp->frto = 0; /* Step 3.a. loss was real */
 		} else if (flag & FLAG_SND_UNA_ADVANCED && !recovered) {
 			tp->high_seq = tp->snd_nxt;
-			/* Step 2.b. Try send new data (but deferred until cwnd
-			 * is updated in tcp_ack()). Otherwise fall back to
-			 * the conventional recovery.
-			 */
-			if (tcp_send_head(sk) &&
-			    after(tcp_wnd_end(tp), tp->snd_nxt)) {
-				*rexmit = REXMIT_NEW;
-				return;
-			}
+			__tcp_push_pending_frames(sk, tcp_current_mss(sk),
+						  TCP_NAGLE_OFF);
+			if (after(tp->snd_nxt, tp->high_seq))
+				return; /* Step 2.b */
 			tp->frto = 0;
 		}
 	}
@@ -3136,7 +3126,7 @@ static void tcp_process_loss(struct sock *sk, int flag, bool is_dupack,
 		else if (flag & FLAG_SND_UNA_ADVANCED)
 			tcp_reset_reno_sack(tp);
 	}
-	*rexmit = REXMIT_LOST;
+	tcp_xmit_retransmit_queue(sk);
 }
 
 /* Undo during fast recovery after partial ACK. */
@@ -3186,7 +3176,7 @@ static bool tcp_try_undo_partial(struct sock *sk, const int acked,
  */
 static void tcp_fastretrans_alert(struct sock *sk, const int acked,
 				  const int prior_unsacked,
-				  bool is_dupack, int flag, int *rexmit)
+				  bool is_dupack, int flag)
 {
 	struct inet_connection_sock *icsk = inet_csk(sk);
 	struct tcp_sock *tp = tcp_sk(sk);
@@ -3261,7 +3251,7 @@ static void tcp_fastretrans_alert(struct sock *sk, const int acked,
 		}
 		break;
 	case TCP_CA_Loss:
-		tcp_process_loss(sk, flag, is_dupack, rexmit);
+		tcp_process_loss(sk, flag, is_dupack);
 		if (icsk->icsk_ca_state != TCP_CA_Open &&
 		    !(flag & FLAG_LOST_RETRANS))
 			return;
@@ -3301,7 +3291,7 @@ static void tcp_fastretrans_alert(struct sock *sk, const int acked,
 	if (do_lost)
 		tcp_update_scoreboard(sk, fast_rexmit);
 	tcp_cwnd_reduction(sk, prior_unsacked, fast_rexmit, flag);
-	*rexmit = REXMIT_LOST;
+	tcp_xmit_retransmit_queue(sk);
 }
 
 /* Kathleen Nichols' algorithm for tracking the minimum value of
@@ -3974,27 +3964,6 @@ static inline void tcp_in_ack_event(struct sock *sk, u32 flags)
 		icsk->icsk_ca_ops->in_ack_event(sk, flags);
 }
 
-/* Congestion control has updated the cwnd already. So if we're in
- * loss recovery then now we do any new sends (for FRTO) or
- * retransmits (for CA_Loss or CA_recovery) that make sense.
- */
-static void tcp_xmit_recovery(struct sock *sk, int rexmit)
-{
-	struct tcp_sock *tp = tcp_sk(sk);
-
-	if (rexmit == REXMIT_NONE)
-		return;
-
-	if (unlikely(rexmit == 2)) {
-		__tcp_push_pending_frames(sk, tcp_current_mss(sk),
-					  TCP_NAGLE_OFF);
-		if (after(tp->snd_nxt, tp->high_seq))
-			return;
-		tp->frto = 0;
-	}
-	tcp_xmit_retransmit_queue(sk);
-}
-
 /* This routine deals with incoming acks, but not outgoing ones. */
 #ifdef CONFIG_MPTCP
 static int tcp_ack(struct sock *sk, struct sk_buff *skb, int flag)
@@ -4013,7 +3982,6 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	int prior_packets = tp->packets_out;
 	const int prior_unsacked = tp->packets_out - tp->sacked_out;
 	int acked = 0; /* Number of packets newly acked */
-	int rexmit = REXMIT_NONE; /* Flag to (re)transmit to recover losses */
 
 	sack_state.first_sackt.v64 = 0;
 
@@ -4122,7 +4090,7 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	if (tcp_ack_is_dubious(sk, flag)) {
 		is_dupack = !(flag & (FLAG_SND_UNA_ADVANCED | FLAG_NOT_DUP));
 		tcp_fastretrans_alert(sk, acked, prior_unsacked,
-				      is_dupack, flag, &rexmit);
+				      is_dupack, flag);
 	}
 	if (tp->tlp_high_seq)
 		tcp_process_tlp_ack(sk, ack, flag);
@@ -4140,14 +4108,13 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 	if (icsk->icsk_pending == ICSK_TIME_RETRANS)
 		tcp_schedule_loss_probe(sk);
 	tcp_update_pacing_rate(sk);
-	tcp_xmit_recovery(sk, rexmit);
 	return 1;
 
 no_queue:
 	/* If data was DSACKed, see if we can undo a cwnd reduction. */
 	if (flag & FLAG_DSACKING_ACK)
 		tcp_fastretrans_alert(sk, acked, prior_unsacked,
-				      is_dupack, flag, &rexmit);
+				      is_dupack, flag);
 	/* If this ack opens up a zero window, clear backoff.  It was
 	 * being used to time the probes, and is probably far higher than
 	 * it needs to be for normal retransmission.
@@ -4171,8 +4138,7 @@ old_ack:
 		flag |= tcp_sacktag_write_queue(sk, skb, prior_snd_una,
 						&sack_state);
 		tcp_fastretrans_alert(sk, acked, prior_unsacked,
-				      is_dupack, flag, &rexmit);
-		tcp_xmit_recovery(sk, rexmit);
+				      is_dupack, flag);
 	}
 
 	SOCK_DEBUG(sk, "Ack %u before %u:%u\n", ack, tp->snd_una, tp->snd_nxt);
