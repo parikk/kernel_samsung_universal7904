@@ -1346,7 +1346,7 @@ static bool can_merge(struct size_class *prev, int pages_per_zspage,
 		return false;
 
 	if (get_maxobj_per_zspage(prev->size, prev->pages_per_zspage)
-		!= get_maxobj_per_zspage(size, pages_per_zspage))
+		!= get_maxobj_per_zspage(ksize, pages_per_zspage))
 		return false;
 
 	return true;
