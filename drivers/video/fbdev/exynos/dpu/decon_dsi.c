@@ -156,7 +156,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 1: FRAME START */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			0, pdev->name, decon);
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install FRAME START irq\n");
 		return ret;
@@ -165,7 +165,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 2: FRAME DONE */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			0, pdev->name, decon);
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install FRAME DONE irq\n");
 		return ret;
@@ -174,7 +174,7 @@ int decon_register_irq(struct decon_device *decon)
 	/* 3: EXTRA: resource conflict, timeout and error irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
 	ret = devm_request_irq(dev, res->start, decon_irq_handler,
-			0, pdev->name, decon);
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install EXTRA irq\n");
 		return ret;

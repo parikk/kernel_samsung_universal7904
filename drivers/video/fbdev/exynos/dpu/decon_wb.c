@@ -86,8 +86,8 @@ int decon_wb_register_irq(struct decon_device *decon)
 	/* Get IRQ resource and register IRQ handler. */
 	/* 0: Under Flow irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler, 0,
-			pdev->name, decon);
+	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler,
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install irq\n");
 		return ret;
@@ -95,8 +95,8 @@ int decon_wb_register_irq(struct decon_device *decon)
 
 	/* 1: VStatus irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
-	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler, 0,
-			pdev->name, decon);
+	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler,
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install irq\n");
 		return ret;
@@ -104,8 +104,8 @@ int decon_wb_register_irq(struct decon_device *decon)
 
 	/* 2: FrameStart irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
-	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler, 0,
-			pdev->name, decon);
+	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler,
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install irq\n");
 		return ret;
@@ -113,8 +113,8 @@ int decon_wb_register_irq(struct decon_device *decon)
 
 	/* 3: FrameDone irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
-	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler, 0,
-			pdev->name, decon);
+	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler,
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install irq\n");
 		return ret;
@@ -122,8 +122,8 @@ int decon_wb_register_irq(struct decon_device *decon)
 
 	/* 4: Extra irq */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 4);
-	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler, 0,
-			pdev->name, decon);
+	ret = devm_request_irq(dev, res->start, decon_wb_irq_handler,
+			IRQF_PERF_AFFINE, pdev->name, decon);
 	if (ret) {
 		decon_err("failed to install irq\n");
 		return ret;
