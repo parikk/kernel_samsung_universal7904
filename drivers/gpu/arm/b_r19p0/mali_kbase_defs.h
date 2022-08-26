@@ -832,8 +832,6 @@ static inline bool kbase_jd_katom_is_protected(const struct kbase_jd_atom *katom
  *                            Since the waitq is only set under @lock, the waiter
  *                            should also briefly obtain and drop @lock to guarantee
  *                            that the setter has completed its work on the kbase_context
- * @job_done_wq:              Workqueue to which the per atom work item is queued
- *                            for bottom half processing when the atom completes
  *                            execution on GPU or the input fence get signaled.
  * @tb_lock:                  Lock to serialize the write access made to @tb to
  *                            to store the register access trace messages.
@@ -855,8 +853,6 @@ struct kbase_jd_context {
 	u32 job_nr;
 
 	wait_queue_head_t zero_jobs_wait;
-
-	struct workqueue_struct *job_done_wq;
 
 	spinlock_t tb_lock;
 	u32 *tb;
@@ -1974,8 +1970,6 @@ struct kbase_reg_zone {
  * @event_closed:         Flag set through POST_TERM ioctl, indicates that Driver
  *                        should stop posting events and also inform event handling
  *                        thread that context termination is in progress.
- * @event_workq:          Workqueue for processing work items corresponding to atoms
- *                        that do not return an event to userspace.
  * @event_count:          Count of the posted events to be consumed by Userspace.
  * @event_coalesce_count: Count of the events present in @event_coalesce_list.
  * @flags:                bitmap of enums from kbase_context_flags, indicating the
@@ -2192,7 +2186,6 @@ struct kbase_context {
 	struct list_head event_coalesce_list;
 	struct mutex event_mutex;
 	atomic_t event_closed;
-	struct workqueue_struct *event_workq;
 	atomic_t event_count;
 	int event_coalesce_count;
 
@@ -2232,7 +2225,6 @@ struct kbase_context {
 #ifdef CONFIG_MALI_DMA_FENCE
 	struct {
 		struct list_head waiting_resource;
-		struct workqueue_struct *wq;
 	} dma_fence;
 #endif /* CONFIG_MALI_DMA_FENCE */
 
