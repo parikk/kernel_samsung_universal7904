@@ -7,7 +7,11 @@
 #include <linux/moduleparam.h>
 #include <linux/battery_saver.h>
 
+#ifdef CONFIG_BATTERY_SAVER_ENABLED
+static bool enabled = true;
+#else
 static bool enabled = false;
+#endif
 module_param(enabled, bool, 0644);
 
 // returns whether battery saver is enabled or disabled
