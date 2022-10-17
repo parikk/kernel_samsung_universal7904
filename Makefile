@@ -302,15 +302,11 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-<<<<<<< HEAD
-HOSTCC       = ccache gcc
-=======
 ifneq ($(LLVM),)
 HOSTCC       = clang
 HOSTCXX      = clang++
 else
 HOSTCC       = gcc
->>>>>>> 80126d0d8b3b (BACKPORT: kbuild: support LLVM=1 to switch the default tools to Clang/LLVM)
 HOSTCXX      = g++
 endif
 
@@ -939,7 +935,8 @@ KBUILD_LDFLAGS_MODULE += $(LDFLAGS_BUILD_ID)
 LDFLAGS_vmlinux += $(LDFLAGS_BUILD_ID)
 
 ifdef CONFIG_LD_DEAD_CODE_DATA_ELIMINATION
-LDFLAGS_vmlinux	+= $(call ld-option, --gc-sections,)
+LDFLAGS_vmlinux += $(call ld-option, --gc-sections,)
+LDFLAGS_vmlinux += -z nostart-stop-gc
 endif
 
 ifeq ($(CONFIG_STRIP_ASM_SYMS),y)
